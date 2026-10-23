@@ -1,4 +1,4 @@
-name: Build Manager
+name: Build LinYuKernel
 
 on:
   push:
@@ -13,6 +13,8 @@ on:
       - '.github/scripts/setup-rust-build.sh'
       - '.github/riscv64-cargo.toml'
       - 'repack_apk.py'
+      - 'signing/**'
+      - 'scripts/verify_manager_identity.py'
       - 'manager/**'
       - 'kernel/**'
       - 'userspace/**'
@@ -30,23 +32,48 @@ on:
       - '.github/scripts/setup-rust-build.sh'
       - '.github/riscv64-cargo.toml'
       - 'repack_apk.py'
+      - 'signing/**'
+      - 'scripts/verify_manager_identity.py'
       - 'manager/**'
       - 'kernel/**'
       - 'userspace/**'
       - 'Cargo.lock'
       - 'Cargo.toml'
+  workflow_dispatch:
   workflow_call:
 
 jobs:
   generate-key:
     runs-on: ubuntu-latest
     outputs:
-      expected_size: ${{ steps.extract.outputs.expected_size }}
-      expected_hash: ${{ steps.extract.outputs.expected_hash }}
+      expected_size: ${{ steps.extract.outputs.expected_size || steps.release-identity.outputs.expected_size }}
+      expected_hash: ${{ steps.extract.outputs.expected_hash || steps.release-identity.outputs.expected_hash }}
       keystore: ${{ steps.gen.outputs.keystore }}
       keystore_password: ${{ steps.gen.outputs.keystore_password }}
       key_password: ${{ steps.gen.outputs.key_password }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate release signing identity
+        if: github.event_name != 'pull_request'
+        id: release-identity
+        env:
+          KEYSTORE: ${{ secrets.KEYSTORE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          test -n "$KEYSTORE"
+          echo "$KEYSTORE" | base64 -d > "$RUNNER_TEMP/manager.jks"
+          keytool -exportcert -keystore "$RUNNER_TEMP/manager.jks" \
+            -storepass:env KEYSTORE_PASSWORD -alias "$KEY_ALIAS" \
+            -file "$RUNNER_TEMP/manager.der"
+          cmp signing/manager.der "$RUNNER_TEMP/manager.der"
+          python3 scripts/verify_manager_identity.py
+          echo "expected_size=$(printf '0x%04x' "$(stat -c%s signing/manager.der)")" >> "$GITHUB_OUTPUT"
+          echo "expected_hash=$(sha256sum signing/manager.der | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          rm "$RUNNER_TEMP/manager.jks"
+
       - name: Generate temporary keystore
         if: github.event_name == 'pull_request'
         id: gen
@@ -62,7 +89,7 @@ jobs:
             -validity 1 \
             -storepass "$KEYSTORE_PASSWORD" \
             -keypass "$KEY_PASSWORD" \
-            -dname "CN=KernelSU PR Build" \
+            -dname "CN=LinYuKernel PR Build" \
             -storetype JKS \
             -keystore pr-key.jks
 
@@ -224,15 +251,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup need_upload
-        id: need_upload
-        run: |
-          if [ ! -z "${{ secrets.BOT_TOKEN }}" ]; then
-            echo "UPLOAD=true" >> $GITHUB_OUTPUT
-          else
-            echo "UPLOAD=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Download gradle manager artifact
         uses: actions/download-artifact@v8
         with:
@@ -318,27 +336,16 @@ jobs:
             -S "$SIGN_KEY_PASSWORD" \
             --strip
 
+      - name: Verify signed manager identity
+        if: github.event_name != 'pull_request'
+        run: |
+          for apk in dist/*.apk; do
+            python3 scripts/verify_manager_identity.py --apk "$apk"
+          done
+
       - name: Upload build artifact
         if: ${{ github.event_name == 'pull_request' || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')) || github.ref_type == 'tag' }}
         uses: actions/upload-artifact@v7
         with:
           name: manager
           path: dist/*.apk
-
-      - name: Upload to telegram
-        if: github.event_name != 'pull_request' && steps.need_upload.outputs.UPLOAD == 'true'
-        env:
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          MESSAGE_THREAD_ID: ${{ secrets.MESSAGE_THREAD_ID }}
-          GITHUB_EVENT: ${{ toJson(github.event) }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          TITLE: Manager
-          BRANCH: ${{ github.ref_name }}
-        run: |
-          if [ ! -z "${{ secrets.BOT_TOKEN }}" ]; then
-            export VERSION=$(git rev-list --count HEAD)
-            APK=$(find ./dist -name "*.apk")
-            pip3 install telethon
-            python3 $GITHUB_WORKSPACE/scripts/ksubot.py $APK
-          fi

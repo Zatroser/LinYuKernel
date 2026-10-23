@@ -46,7 +46,7 @@ jobs:
         EXPECTED_SIZE: ${{ inputs.expected_size }}
         EXPECTED_HASH: ${{ inputs.expected_hash }}
       run: |
-        git config --global --add safe.directory /__w/KernelSU/KernelSU
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
         cd kernel
 
@@ -82,6 +82,10 @@ jobs:
         echo "Size: $(du -h "$OUT_DIR/$OUTPUT_NAME" | cut -f1)"
         llvm-strip -d "$OUT_DIR/$OUTPUT_NAME"
         echo "Size after stripping: $(du -h "$OUT_DIR/$OUTPUT_NAME" | cut -f1)"
+
+    - name: Verify arm64 manager identity
+      if: github.event_name != 'pull_request'
+      run: python3 scripts/verify_manager_identity.py --module /github/workspace/out/aarch64/${{ inputs.kmi }}_kernelsu.ko
 
     - name: Upload kernelsu.ko artifact
       uses: actions/upload-artifact@v7
@@ -167,6 +171,10 @@ jobs:
         llvm-strip -d "$OUT_DIR/$OUTPUT_NAME"
         echo "Size after stripping: $(du -h "$OUT_DIR/$OUTPUT_NAME" | cut -f1)"
         
+    - name: Verify x64 manager identity
+      if: github.event_name != 'pull_request'
+      run: python3 scripts/verify_manager_identity.py --module /github/workspace/out/x86_64/${{ inputs.kmi }}_kernelsu.ko
+
     - name: Upload x64 kernelsu.ko artifact
       uses: actions/upload-artifact@v7
       with:

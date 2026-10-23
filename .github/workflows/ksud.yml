@@ -56,12 +56,25 @@ jobs:
       with:
         ndk-version: r29
 
+    - name: Check Android Rust changes
+      if: inputs.target == 'aarch64-linux-android'
+      env:
+        ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+      run: |
+        cargo install cargo-ndk --locked
+        source .github/scripts/setup-rust-build.sh aarch64-linux-android 26
+        cd userspace/ksud
+        cargo ndk -t arm64-v8a check
+        cargo ndk -t arm64-v8a clippy
+        cargo fmt
+        git diff --exit-code
+
     - name: Build ksud
       env:
         ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       run: |
         if [ "${{ github.event_name }}" = "pull_request" ]; then
-          export KSU_PACKAGE_NAME="me.weishu.kernelsu.pr"
+          export KSU_PACKAGE_NAME="com.zatroser.kernelmanager.pr"
         fi
         if [ "${{ inputs.target }}" = riscv64-linux-android ]; then
           source .github/scripts/setup-rust-build.sh riscv64-linux-android 35
