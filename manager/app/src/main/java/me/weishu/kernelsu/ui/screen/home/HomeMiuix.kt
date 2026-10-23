@@ -36,7 +36,6 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Tag
-import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.runtime.Composable
@@ -441,19 +440,6 @@ private fun SupportLinks(
     val learnMoreUrl = stringResource(R.string.home_learn_kernelsu_url)
 
     Card(modifier = modifier) {
-        ArrowPreference(
-            title = stringResource(R.string.home_support_title),
-            summary = stringResource(R.string.home_support_content),
-            startAction = {
-                Icon(
-                    imageVector = Icons.Filled.VolunteerActivism,
-                    contentDescription = stringResource(R.string.home_support_title),
-                    modifier = Modifier.padding(end = 6.dp),
-                    tint = colorScheme.onBackground,
-                )
-            },
-            onClick = { onOpenUrl("https://patreon.com/weishu") },
-        )
         ArrowPreference(
             title = stringResource(R.string.home_learn_kernelsu),
             summary = stringResource(R.string.home_click_to_learn_kernelsu),

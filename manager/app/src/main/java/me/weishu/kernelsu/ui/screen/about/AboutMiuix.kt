@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
@@ -39,11 +38,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInWindow
@@ -281,7 +280,7 @@ private fun AboutContent(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(100.dp)
-                    .clipToBounds()
+                    .clip(RoundedCornerShape(24.dp))
                     .graphicsLayer {
                         alpha = 1 - iconProgress
                         scaleX = 1 - (iconProgress * 0.05f)
@@ -295,23 +294,10 @@ private fun AboutContent(
                     },
             ) {
                 Image(
-                    modifier = Modifier
-                        .requiredSize(245.dp)
-                        .then(
-                            if (enableBlur) {
-                                Modifier.textureBlur(
-                                    backdrop = backdrop,
-                                    shape = RoundedCornerShape(0.dp),
-                                    blurRadius = 150f,
-                                    colors = BlurColors(blendColors = logoBlend),
-                                    contentBlendMode = ComposeBlendMode.DstIn,
-                                    enabled = true,
-                                )
-                            } else Modifier
-                        ),
+                    modifier = Modifier.fillMaxSize(),
                     painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    colorFilter = ColorFilter.tint(colorScheme.onBackground),
-                    contentDescription = null,
+                    contentDescription = state.appName,
+                    contentScale = ContentScale.Crop,
                 )
             }
             Text(

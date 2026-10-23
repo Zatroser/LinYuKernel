@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.automirrored.rounded.Rule
 import androidx.compose.material.icons.rounded.Adb
 import androidx.compose.material.icons.rounded.AdminPanelSettings
-import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.DeveloperMode
@@ -44,8 +43,6 @@ import androidx.compose.ui.unit.dp
 import me.weishu.kernelsu.R
 import me.weishu.kernelsu.ui.UiMode
 import me.weishu.kernelsu.ui.component.KsuIsValid
-import me.weishu.kernelsu.ui.component.dialog.rememberLoadingDialog
-import me.weishu.kernelsu.ui.component.miuix.SendLogDialog
 import me.weishu.kernelsu.ui.component.uninstalldialog.UninstallDialog
 import me.weishu.kernelsu.ui.theme.LocalEnableBlur
 import me.weishu.kernelsu.ui.util.BlurredBar
@@ -78,9 +75,7 @@ fun SettingPagerMiuix(
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
     val barColor = if (blurActive) Color.Transparent else colorScheme.surface
-    val loadingDialog = rememberLoadingDialog()
     val showUninstallDialog = rememberSaveable { mutableStateOf(false) }
-    val showSendLogDialog = rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -447,23 +442,6 @@ fun SettingPagerMiuix(
                             .padding(vertical = 12.dp)
                             .fillMaxWidth(),
                     ) {
-                        ArrowPreference(
-                            title = stringResource(id = R.string.send_log),
-                            startAction = {
-                                Icon(
-                                    Icons.Rounded.BugReport,
-                                    modifier = Modifier.padding(end = 6.dp),
-                                    contentDescription = stringResource(id = R.string.send_log),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            onClick = { showSendLogDialog.value = true },
-                        )
-                        SendLogDialog(
-                            show = showSendLogDialog.value,
-                            onDismissRequest = { showSendLogDialog.value = false },
-                            loadingDialog = loadingDialog
-                        )
                         val about = stringResource(id = R.string.about)
                         ArrowPreference(
                             title = about,

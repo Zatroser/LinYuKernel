@@ -16,7 +16,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Rule
 import androidx.compose.material.icons.filled.Adb
 import androidx.compose.material.icons.filled.AdminPanelSettings
-import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DeveloperMode
@@ -38,11 +37,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -56,7 +53,6 @@ import me.weishu.kernelsu.ui.component.material.SegmentedColumn
 import me.weishu.kernelsu.ui.component.material.SegmentedDropdownItem
 import me.weishu.kernelsu.ui.component.material.SegmentedListItem
 import me.weishu.kernelsu.ui.component.material.SegmentedSwitchItem
-import me.weishu.kernelsu.ui.component.material.SendLogBottomSheet
 import me.weishu.kernelsu.ui.component.material.SnackBarHost
 import me.weishu.kernelsu.ui.component.material.expressiveTopAppBarColors
 import me.weishu.kernelsu.ui.component.uninstalldialog.UninstallDialog
@@ -74,7 +70,6 @@ fun SettingPagerMaterial(
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     val snackBarHost = remember { SnackbarHostState() }
     val showUninstallDialog = rememberSaveable { mutableStateOf(false) }
-    var showBottomSheet by remember { mutableStateOf(false) }
 
     UninstallDialog(
         show = showUninstallDialog.value,
@@ -348,18 +343,6 @@ fun SettingPagerMaterial(
                 content = listOf(
                     {
                         SegmentedListItem(
-                            onClick = { showBottomSheet = true },
-                            headlineContent = { Text(stringResource(id = R.string.send_log)) },
-                            leadingContent = {
-                                Icon(
-                                    Icons.Filled.BugReport,
-                                    stringResource(id = R.string.send_log)
-                                )
-                            },
-                        )
-                    },
-                    {
-                        SegmentedListItem(
                             onClick = actions.onOpenAbout,
                             headlineContent = { Text(stringResource(id = R.string.about)) },
                             leadingContent = {
@@ -375,12 +358,6 @@ fun SettingPagerMaterial(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (showBottomSheet) {
-                SendLogBottomSheet(
-                    onDismiss = { showBottomSheet = false },
-                    snackbarHostState = snackBarHost,
-                )
-            }
             Spacer(modifier = Modifier.height(bottomInnerPadding))
         }
     }
