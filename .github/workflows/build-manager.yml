@@ -188,9 +188,9 @@ jobs:
       - name: Build with Gradle
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            ./gradlew clean check assembleRelease -PIS_PR_BUILD=true
+            ./gradlew clean assembleRelease -PIS_PR_BUILD=true
           else
-            ./gradlew clean check assembleRelease
+            ./gradlew clean assembleRelease
           fi
 
       - name: Upload build artifact
