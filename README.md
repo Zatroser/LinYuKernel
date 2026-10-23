@@ -11,6 +11,16 @@ Fork of [tiann/KernelSU](https://github.com/tiann/KernelSU).
 The Kotlin/JNI implementation namespace remains `me.weishu.kernelsu`.
 It is separate from the installed application's package ID.
 
+## Manager icon
+
+The supplied artwork is preserved in `branding/manager-icon.png`. Launcher,
+splash, in-app and themed icons use that image. To regenerate the raster assets:
+
+```sh
+python -m pip install Pillow
+python scripts/generate_manager_icons.py
+```
+
 ## Builds
 
 Run **Build LinYuKernel** in GitHub Actions. The `manager` artifact contains
