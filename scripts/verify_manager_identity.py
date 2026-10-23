@@ -96,6 +96,7 @@ def main():
     require(f"KSU_PACKAGE_NAME ?= {PACKAGE}\n" in kbuild, "Kernel package mismatch")
     gradle = (ROOT / "manager/app/build.gradle.kts").read_text()
     require(f'"{PACKAGE}.pr" else "{PACKAGE}"' in gradle, "Manager package mismatch")
+    require(f'namespace = "{PACKAGE}"' in gradle, "Manager namespace mismatch")
     rust = (ROOT / "userspace/ksud/build.rs").read_text()
     require(f"KSU_PACKAGE_NAME={PACKAGE}" in rust, "ksud package mismatch")
     if args.apk:
@@ -103,10 +104,29 @@ def main():
         with zipfile.ZipFile(args.apk) as archive:
             libraries = [name for name in archive.namelist() if name.startswith("lib/") and name.endswith(".so")]
             require({name.split("/")[1] for name in libraries} == {"arm64-v8a"}, "APK must contain only ARM64 libraries")
-            require("lib/arm64-v8a/libksud.so" in libraries, "APK is missing its ARM64 daemon")
+            require("lib/arm64-v8a/libdaemon.so" in libraries, "APK is missing its ARM64 daemon")
+            require("lib/arm64-v8a/liblinyusu.so" in libraries, "APK is missing its JNI bridge")
+            require(not any(name.endswith(("/libksud.so", "/libkernelsu.so")) for name in libraries),
+                    "APK contains an obsolete native library name")
+            bridge = archive.read("lib/arm64-v8a/liblinyusu.so")
+            exports = re.findall(r"\b(Java_com_zatroser_kernelmanager_\w+)\s*\(",
+                                 (ROOT / "manager/app/src/main/cpp/jni.cc").read_text())
+            require(exports and all(symbol.encode() + b"\0" in bridge for symbol in exports),
+                    "JNI bridge exports do not match the manager namespace")
+            dex_files = [archive.read(name) for name in archive.namelist() if re.fullmatch(r"classes\d*\.dex", name)]
+            require(dex_files, "APK is missing DEX code")
+            require(all(b"me/weishu/kernelsu" not in data and b"me.weishu.kernelsu" not in data for data in dex_files),
+                    "APK DEX still references the upstream namespace")
+            for component in ("LinYuApplication", "ui/LauncherActivity", "magica/RuntimePreload"):
+                descriptor = f"Lcom/zatroser/kernelmanager/{component};".encode()
+                require(any(descriptor in data for data in dex_files), f"Missing entry class: {component}")
         subprocess.run([android_tool("apksigner"), "verify", "--verbose", str(args.apk)], check=True)
         badging = subprocess.check_output([android_tool("aapt"), "dump", "badging", str(args.apk)], text=True)
         require(f"package: name='{PACKAGE}' " in badging, "APK applicationId mismatch")
+        manifest = subprocess.check_output(
+            [android_tool("aapt"), "dump", "xmltree", str(args.apk), "AndroidManifest.xml"], text=True)
+        for component in ("LinYuApplication", "ui.LauncherActivity", "magica.RuntimePreload"):
+            require(f"{PACKAGE}.{component}" in manifest, f"Manifest entry mismatch: {component}")
     if args.module:
         module = args.module.read_bytes()
         require(module.startswith(b"\x7fELF"), "Module is not ELF")

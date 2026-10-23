@@ -8,8 +8,10 @@ Fork of [tiann/KernelSU](https://github.com/tiann/KernelSU).
   [`signing/manager.der`](signing/manager.der).
 - Manager updates: `Zatroser/LinYuKernel` releases.
 
-The Kotlin/JNI implementation namespace remains `me.weishu.kernelsu`.
-It is separate from the installed application's package ID.
+The Kotlin/Java/AIDL/JNI namespace is `com.zatroser.kernelmanager`.
+The application, launcher and preload entries are `LinYuApplication`,
+`ui.LauncherActivity` and `magica.RuntimePreload`. The APK contains
+`libdaemon.so` (daemon) and `liblinyusu.so` (JNI bridge).
 
 ## Manager icon
 
