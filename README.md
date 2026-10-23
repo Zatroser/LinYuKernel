@@ -25,7 +25,9 @@ python scripts/generate_manager_icons.py
 
 Run **Build LinYuKernel** in GitHub Actions. The `manager` artifact contains
 the final signed APK with the rebuilt daemons and modules. KMI-specific
-`aarch64-*-lkm` and `x86_64-*-lkm` artifacts contain the kernel modules.
+`aarch64-*-lkm` artifacts contain the ARM64 kernel modules.
+Only `aarch64-linux-android` daemons and `arm64-v8a` APK libraries are built.
+Different ARM64 KMI versions are retained for supported Android kernels.
 `manager-gradle` is an intermediate APK, not the installable deliverable.
 
 Release builds require repository Actions secrets `KEYSTORE` (base64 JKS),

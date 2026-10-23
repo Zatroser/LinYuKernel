@@ -10,6 +10,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "com.zatroser.kernelmanager"
@@ -99,12 +100,18 @@ def main():
     require(f"KSU_PACKAGE_NAME={PACKAGE}" in rust, "ksud package mismatch")
     if args.apk:
         require(apk_certificate(args.apk.read_bytes()) == cert, "APK signed with another certificate")
+        with zipfile.ZipFile(args.apk) as archive:
+            libraries = [name for name in archive.namelist() if name.startswith("lib/") and name.endswith(".so")]
+            require({name.split("/")[1] for name in libraries} == {"arm64-v8a"}, "APK must contain only ARM64 libraries")
+            require("lib/arm64-v8a/libksud.so" in libraries, "APK is missing its ARM64 daemon")
         subprocess.run([android_tool("apksigner"), "verify", "--verbose", str(args.apk)], check=True)
         badging = subprocess.check_output([android_tool("aapt"), "dump", "badging", str(args.apk)], text=True)
         require(f"package: name='{PACKAGE}' " in badging, "APK applicationId mismatch")
     if args.module:
         module = args.module.read_bytes()
         require(module.startswith(b"\x7fELF"), "Module is not ELF")
+        require(module[4:6] == b"\x02\x01" and struct.unpack_from("<H", module, 18)[0] == 183,
+                "Module must be little-endian AArch64 ELF64")
         require(PACKAGE.encode() + b"\0" in module, "Module manager package mismatch")
         require(digest.encode() + b"\0" in module, "Module certificate hash mismatch")
     print("PASS: LinYuKernel package and signing identity" +

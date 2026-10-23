@@ -2,9 +2,6 @@ name: Build ksud
 on:
   workflow_call:
     inputs:
-      target:
-        required: true
-        type: string
       pack_lkm:
         required: false
         type: boolean
@@ -28,23 +25,16 @@ jobs:
       if: ${{ inputs.pack_lkm }}
       run: |
         cp aarch64-android*-lkm/*_kernelsu.ko ./userspace/ksud/bin/aarch64/
-        cp x86_64-android*-lkm/*_kernelsu.ko ./userspace/ksud/bin/x86_64/
     
     - name: Prepare ksuinit
       if: ${{ inputs.pack_ksuinit }}
       run: |
         mv ksuinit-aarch64/ksuinit ./userspace/ksud/bin/aarch64/
-        mv ksuinit-x86_64/ksuinit ./userspace/ksud/bin/x86_64/
-        mv ksuinit-riscv64/ksuinit ./userspace/ksud/bin/riscv64/
         
     - name: Setup rustup
       run: |
-        if [ "${{ inputs.target }}" = riscv64-linux-android ]; then
-          rustup toolchain install nightly-2026-09-23 --profile minimal --component rust-src
-        else
-          rustup update stable
-          rustup target add ${{ inputs.target }}
-        fi
+        rustup update stable
+        rustup target add aarch64-linux-android
 
     - uses: Swatinem/rust-cache@v2
       with:
@@ -57,7 +47,6 @@ jobs:
         ndk-version: r29
 
     - name: Check Android Rust changes
-      if: inputs.target == 'aarch64-linux-android'
       env:
         ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
       run: |
@@ -76,16 +65,11 @@ jobs:
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           export KSU_PACKAGE_NAME="com.zatroser.kernelmanager.pr"
         fi
-        if [ "${{ inputs.target }}" = riscv64-linux-android ]; then
-          source .github/scripts/setup-rust-build.sh riscv64-linux-android 35
-          cargo +nightly-2026-09-23 build --config .github/riscv64-cargo.toml -Z build-std=std,panic_abort --target "$TRIPLE" --release --manifest-path ./userspace/ksud/Cargo.toml
-        else
-          source .github/scripts/setup-rust-build.sh ${{ inputs.target }} 26
-          cargo build --target "$TRIPLE" --release --manifest-path ./userspace/ksud/Cargo.toml
-        fi
+        source .github/scripts/setup-rust-build.sh aarch64-linux-android 26
+        cargo build --target "$TRIPLE" --release --manifest-path ./userspace/ksud/Cargo.toml
 
     - name: Upload ksud artifact
       uses: actions/upload-artifact@v7
       with:
-        name: ksud-${{ inputs.target }}
-        path: target/${{ inputs.target }}/release/ksud
+        name: ksud-aarch64-linux-android
+        path: target/aarch64-linux-android/release/ksud
